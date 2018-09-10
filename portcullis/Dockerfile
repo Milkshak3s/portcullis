@@ -3,10 +3,9 @@ MAINTAINER Chris Vantine "cav9225@rit.edu"
 
 COPY ./requirements.txt /app/requirements.txt
 WORKDIR /app
-RUN wget https://bootstrap.pypa.io/get-pip.py
 RUN pip install -r requirements.txt
 
 COPY . /app
 
-ENTRYPOINT ["python"]
-CMD ["portcullis.py"]
+ENTRYPOINT ["gunicorn"]
+CMD ["-w 4", "-b", "0.0.0.0:80", "portcullis:app"]
