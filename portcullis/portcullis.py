@@ -1,3 +1,4 @@
+import os
 from flask import Flask, g, url_for
 from flask_restful import reqparse, Resource, Api
 from flask_sqlalchemy import SQLAlchemy
@@ -13,8 +14,8 @@ app.config['SECRET_KEY'] = 'something really really secret'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite'
 app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
 
-db = SQLAlchemy(app)
 auth = HTTPBasicAuth()
+db = SQLAlchemy(app)
 
 # define api stuff
 api = Api(app)
@@ -52,6 +53,11 @@ class User(db.Model):
         return user
 
 
+# create db for shitty testing
+if not os.path.exists('db.sqlite'):
+            db.create_all()
+
+
 @auth.verify_password
 def verify_password(username_or_token, password):
     # first try auth by token
@@ -69,8 +75,12 @@ def verify_password(username_or_token, password):
 # user resources
 class Users(Resource):
     def get(self):
-        # TODO: Write real API
-        return {'users' : ['test1', 'test2']}
+        users = User.query.all()
+        user_names = list()
+        for user in users:
+            user_names.append(user.username)
+
+        return {'users' : user_names}
 
     def post(self):
         # add a new user to the db
@@ -89,7 +99,7 @@ class Users(Resource):
         db.session.commit()
 
         return {'username': user.username}, 201, \
-                {'Location': url_for('get_user', id=user.id, _external=True)}
+                {'Location': url_for('users', id=user.id, _external=True)}
 
 
 # auth resource
