@@ -1,5 +1,4 @@
 FROM python:3.6
-MAINTAINER Chris Vantine "cav9225@rit.edu"
 
 COPY ./requirements.txt /app/requirements.txt
 WORKDIR /app

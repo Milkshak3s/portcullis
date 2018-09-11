@@ -104,23 +104,13 @@ class Users(Resource):
 
 # auth resource
 class Auth(Resource):
+    @auth.login_required
     def post(self):
-        # TODO: Write real API
-        args = parser.parse_args()
-        user = args.get('username')
-        password = args.get('password')
-
-        if user and password:
-            return {'token': 'abcdefg'}
-        else:
-            return {'error': 'invalid input'}, 400
+        # get a token
+        token = g.user.generate_auth_token(600)
+        return {'token': token.decode('ascii'), 'duration': 600}
 
 
 # api resources
 api.add_resource(Auth, '/api/auth')
 api.add_resource(Users, '/api/users')
-
-
-# run flask server
-if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0')
