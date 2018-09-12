@@ -48,7 +48,7 @@ workflows:
       - deploy-staging:
           requires:
             - build
-            - push-dev-server
+            - push-staging
           filters:
             branches:
               only: master
