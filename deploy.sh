@@ -16,4 +16,4 @@ docker push "us.gcr.io/${GOOGLE_PROJECT_ID}/portcullis:$CIRCLE_SHA1"
 kubectl config set-context $(kubectl config current-context)
 kubectl config view
 kubectl config current-context
-kubectl patch deployment portcullis -p '{"spec":{"template":{"spec":{"containers":[{"name":"portcullis","image":"us.gcr.io/'"${GOOGLE_PROJECT_ID}"'/portcullis:'"$CIRCLE_SHA1"'"}]}}}}'
+kubectl patch deployment portcullis-1 -p '{"spec":{"template":{"spec":{"containers":[{"name":"portcullis","image":"us.gcr.io/'"${GOOGLE_PROJECT_ID}"'/portcullis:'"$CIRCLE_SHA1"'"}]}}}}'
