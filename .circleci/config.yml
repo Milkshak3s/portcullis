@@ -13,42 +13,14 @@ jobs:
           name: install dependencies
           command: pip install -r requirements.txt
   
-  push-staging:
+  deploy:
     docker:
-      - image: turbinelabs/gcloud-build:0.12.4
+      - image: google/cloud-sdk
     steps:
-      - checkout
-      - setup_remote_docker
-      - run: openrc boot
-      - run: docker build -t "portcullis" -f ./Dockerfile.gcloud
-      - run: docker tag "portcullis" gcr.io/operator-216200/portcullis:$CIRCLE_SHA1
-      - run: gcloud docker -- gcr.io/operator-216200/portcullis:$CIRCLE_SHA1
-
-  deploy-staging:
-    docker:
-      - image: turbinelabs/gcloud-build:0.12.4
-    steps:
-      - checkout
-      - run: openrc boot
-      - run: chmod +x ./.circleci/deploy_qa.sh
-      - run: ./.circleci/deploy_qa.sh
-
-workflows:
-  version: 2
-  dev_deploy:
-    jobs:
-      - build:
-          filters:
-            branches:
-              only: master
-      - push-staging:
-          filters:
-            branches:
-              only: master
-      - deploy-staging:
-          requires:
-            - build
-            - push-staging
-          filters:
-            branches:
-              only: master
+      - run:
+        name: Store Service Account
+        command: echo $GCLOUD_SERVICE_KEY > ${HOME}/gcloud-service-key.json
+      - run: |
+        sudo gcloud auth activate-service-account --key-file=${HOME}/gcloud-service-key.json
+        sudo gcloud --quiet config set project ${GOOGLE_PROJECT_ID}
+        sudo gcloud --quiet config set compute/zone ${GOOGLE_COMPUTE_ZONE 
