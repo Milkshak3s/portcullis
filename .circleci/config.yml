@@ -28,3 +28,15 @@ jobs:
       - run:
         name: Deploy Master to GKE
         command: ./deploy.sh
+
+workflows:
+  version: 2
+  workflow:
+    jobs:
+      - build
+      - deploy:
+        requires:
+          - build
+        filters:
+          branches:
+            only: master
