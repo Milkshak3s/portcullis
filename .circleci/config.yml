@@ -25,6 +25,7 @@ jobs:
       - run: gcloud auth activate-service-account --key-file=${HOME}/gcloud-service-key.json
       - run: gcloud --quiet config set project ${GOOGLE_PROJECT_ID}
       - run: gcloud --quiet config set compute/zone ${GOOGLE_COMPUTE_ZONE}
+      - run: chmod +x deploy.sh
 
       - run:
           name: Deploy Master to GKE
