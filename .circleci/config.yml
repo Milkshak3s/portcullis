@@ -1,6 +1,6 @@
 version: 2
 jobs:
-  build:
+  build-job:
     docker:
       - image: circleci/python:3.6.2
     
@@ -13,7 +13,7 @@ jobs:
           name: install dependencies
           command: sudo pip install -r requirements.txt
   
-  deploy:
+  deploy-job:
     docker:
       - image: google/cloud-sdk
     steps:
@@ -31,10 +31,10 @@ jobs:
 
 workflows:
   version: 2
-  workflow:
+  build-deploy:
     jobs:
-      - build
-      - deploy:
+      - build-job
+      - deploy-job:
         requires:
           - build
         filters:
