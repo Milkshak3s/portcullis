@@ -2,7 +2,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: circleci/python:3.6.1
+      - image: circleci/python:3.6.2
     
     working_directory: ~/repo
 
@@ -41,11 +41,11 @@ workflows:
           filters:
             branches:
               only: master
-      - push-dev-server:
+      - push-staging:
           filters:
             branches:
               only: master
-      - deploy-dev-server:
+      - deploy-staging:
           requires:
             - build
             - push-dev-server
