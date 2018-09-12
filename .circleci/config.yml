@@ -20,7 +20,11 @@ jobs:
       - run:
         name: Store Service Account
         command: echo $GCLOUD_SERVICE_KEY > ${HOME}/gcloud-service-key.json
-      - run: |
-        sudo gcloud auth activate-service-account --key-file=${HOME}/gcloud-service-key.json
-        sudo gcloud --quiet config set project ${GOOGLE_PROJECT_ID}
-        sudo gcloud --quiet config set compute/zone ${GOOGLE_COMPUTE_ZONE 
+        
+      - run: sudo gcloud auth activate-service-account --key-file=${HOME}/gcloud-service-key.json
+      - run: sudo gcloud --quiet config set project ${GOOGLE_PROJECT_ID}
+      - run: sudo gcloud --quiet config set compute/zone ${GOOGLE_COMPUTE_ZONE
+
+      - run:
+        name: Deploy Master to GKE
+        command: ./deploy.sh
