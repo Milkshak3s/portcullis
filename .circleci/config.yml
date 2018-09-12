@@ -1,0 +1,54 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/python:3.6.1
+    
+    working_directory: ~/repo
+
+    steps:
+      - checkout
+
+      - run:
+          name: install dependencies
+          command: pip install -r requirements.txt
+  
+  push-staging:
+    docker:
+      - image: turbinelabs/gcloud-build:0.12.4
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run: openrc boot
+      - run: docker build -t "portcullis" -f ./Dockerfile.gcloud
+      - run: docker tag "portcullis" gcr.io/operator-216200/portcullis:$CIRCLE_SHA1
+      - run: gcloud docker -- gcr.io/operator-216200/portcullis:$CIRCLE_SHA1
+
+  deploy-staging:
+    docker:
+      - image: turbinelabs/gcloud-build:0.12.4
+    steps:
+      - checkout
+      - run: openrc boot
+      - run: chmod +x ./.circleci/deploy_qa.sh
+      - run: ./.circleci/deploy_qa.sh
+
+workflows:
+  version: 2
+  dev_deploy:
+    jobs:
+      - build:
+          filters:
+            branches:
+              only: master
+      - push-dev-server:
+          filters:
+            branches:
+              only: master
+      - deploy-dev-server:
+          requires:
+            - build
+            - push-dev-server
+          filters:
+            branches:
+              only: master

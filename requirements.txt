@@ -1,0 +1,6 @@
+Flask==0.12.3
+flask-restful
+flask-sqlalchemy
+flask-httpauth
+passlib
+gunicorn
