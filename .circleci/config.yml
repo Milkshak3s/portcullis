@@ -29,6 +29,9 @@ jobs:
       - run: chmod +x deploy.sh
 
       - run:
+          name: Start Dockerd
+          command: dockerd &
+      - run:
           name: Deploy Master to GKE
           command: ./deploy.sh
 
