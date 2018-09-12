@@ -3,6 +3,6 @@
 # Exit on any error
 set -e
 
-gcloud docker push us.gcr.io/${PROJECT_NAME}/portcullis
+gcloud docker push -- "us.gcr.io/'"${PROJECT_NAME}"'/portcullis:'"$CIRCLE_SHA1"'"
 chown -R ubuntu:ubuntu /home/ubuntu/.kube
-kubectl patch deployment portcullis -p '{"spec":{"template":{"spec":{"containers":[{"name":"portcullis","image":"us.gcr.io/${PROJECT_NAME}/portcullis:'"$CIRCLE_SHA1"'"}]}}}}'
+kubectl patch deployment portcullis -p '{"spec":{"template":{"spec":{"containers":[{"name":"portcullis","image":"us.gcr.io/'"${PROJECT_NAME}"'/portcullis:'"$CIRCLE_SHA1"'"}]}}}}'
