@@ -1,5 +1,5 @@
 # PORTCULLIS
-[![CircleCI](https://circleci.com/gh/ritsec-dev/portcullis.svg?style=svg)](https://circleci.com/gh/ritsec-dev/portcullis)
+[![CircleCI](https://circleci.com/gh/ritsec-dev/portcullis.svg?style=svg)](https://circleci.com/gh/ritsec-dev/portcullis)  
 A simple token-based auth system
 
 ## USAGE
