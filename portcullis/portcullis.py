@@ -27,21 +27,34 @@ parser.add_argument('password')
 class User(db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(32), index=True)
-    password_hash = db.Column(db.String(64))
+    username = db.Column(db.String(32), index=True, nullable=False)
+    password_hash = db.Column(db.String(64), nullable=False)
+    group_id = db.Column(db.Integer)
 
     def hash_password(self, password):
+        """
+        Given a password, hash and store under user.password_hash
+        """
         self.password_hash = pwd_context.encrypt(password)
 
     def verify_password(self, password):
+        """
+        Check a password againt the hash stored with this user
+        """
         return pwd_context.verify(password, self.password_hash)
 
     def generate_auth_token(self, expiration=600):
+        """
+        Generate an auth token for this user
+        """
         s = Serializer(app.config['SECRET_KEY'], expires_in=expiration)
         return s.dumps({'id': self.id})
 
     @staticmethod
     def verify_auth_token(token):
+        """
+        Given a token, return username if valid or None if invalid
+        """
         s = Serializer(app.config['SECRET_KEY'])
         try:
             data = s.loads(token)
@@ -53,9 +66,22 @@ class User(db.Model):
         return user
 
 
+class Permission(db.Model):
+    __tablename__ = 'permissions'
+    id = db.Column(db.Integer, primary_key=True)
+    perm_name = db.Column(db.String(32), index=True, nullable=False)
+
+
+class UserPerm(db.Model):
+    __tablename__ = 'users_perm'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, nullable=False)
+    perm_id = db.Column(db.Integer, nullable=False)
+
+
 # create db for shitty testing
 if not os.path.exists('db.sqlite'):
-            db.create_all()
+    db.create_all()
 
 
 @auth.verify_password
