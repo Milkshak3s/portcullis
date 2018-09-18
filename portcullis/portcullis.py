@@ -177,14 +177,15 @@ class Users(Resource):
         user = User(username=username, group_id=group_id)
         user.hash_password(password)
         db.session.add(user)
+        db.session.commit()
 
         # create references for permissions that do exit
         if permissions_list is not None:
             for perm_id in perm_id_list:
                 user_perm = UserPerm(user_id=user.id, perm_id=perm_id)
                 db.session.add(user_perm)
+                db.session.commit()
 
-        db.session.commit()
         return {'user_id': user.id}
 
 
@@ -225,7 +226,7 @@ class Groups(Resource):
             # required fields
             return {'error': 'missing arguments'}, 400
         if Group.query.filter_by(group_name=group_name).first() is not None:
-            # user with name already in DB
+            # group with name already in DB
             return {'error': 'existing user'}, 400
         if permissions_list is not None:
             # iterate through permissions, make sure they all exist
@@ -238,15 +239,72 @@ class Groups(Resource):
 
         group = Group(group_name=group_name)
         db.session.add(group)
+        db.session.commit()
         
         # create references for permissions that do exit
         if permissions_list is not None:
             for perm_id in perm_id_list:
                 group_perm = GroupPerm(group_id=group.id, perm_id=perm_id)
                 db.session.add(group_perm)
+                db.session.commit()
 
-        db.session.commit()
         return {'group_id': group.id}
+
+
+class Permissions(Resource):
+
+    """
+    Resources for working with permissions
+    """
+
+    def get(self):
+        """
+        Returns a list of registered permissions
+        """
+        perms = Permission.query.all()
+        perm_list = list()
+        perm_dict = dict()
+        for perm in perms:
+            perm_dict['perm_id'] = perm.id
+            perm_dict['name'] = perm.perm_name
+            perm_list.append(perm_dict)
+
+        return {'perms' : perm_list}
+
+    def post(self):
+        """
+        Registers a new permission
+        """
+        options = ['perm_name', 
+                   'object_path_list']
+
+        data = request.get_json()
+        for k in data.keys():
+            if k not in options:
+                return {'error': 'unknown option: {}'.format(k)}, 400
+
+        perm_name = data.get('perm_name')
+        object_path_list = data.get('object_path_list')
+
+        if perm_name is None:
+            # required fields
+            return {'error': 'missing arguments'}, 400
+        if Permission.query.filter_by(perm_name=perm_name).first() is not None:
+            # perm with name already in DB
+            return {'error': 'existing permission'}, 400
+
+        perm = Permission(perm_name=perm_name)
+        db.session.add(perm)
+        db.session.commit()
+
+        if object_path_list is not None:
+            # add object/permissions associations
+            for object_path in object_path_list:
+                object_perm_asoc = ObjectPerm(perm_id=perm.id, object_path=object_path)
+                db.session.add(object_perm_asoc)
+                db.session.commit()
+
+        return {'perm_id': perm.id}
 
 
 # auth resource
@@ -259,6 +317,7 @@ class Auth(Resource):
 
 
 # api resources
-api.add_resource(Auth, '/api/auth')
-api.add_resource(Users, '/api/users')
-api.add_resource(Groups, '/api/groups')
+api.add_resource(Auth, '/port/auth')
+api.add_resource(Users, '/port/users')
+api.add_resource(Groups, '/port/groups')
+api.add_resource(Permissions, '/port/permissions')
