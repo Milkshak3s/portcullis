@@ -131,7 +131,7 @@ class Users(Resource):
 
         for user in users:
             user_dict['user_id'] = user.id
-            user_dct['username'] = user.username
+            user_dict['username'] = user.username
             user_list.append(user_dict)
 
         return {'users' : user_list}
@@ -204,7 +204,7 @@ class Groups(Resource):
         Returns a list of all group names
         """
         groups = Group.query.all()
-        group_names = list()
+        group_list = list()
         group_dict = dict()
 
         for group in groups:
@@ -309,15 +309,19 @@ class Permissions(Resource):
         if object_path_list is not None:
             # add object/permissions associations
             for object_path in object_path_list:
-                object_perm_asoc = ObjectPerm(perm_id=perm.id, object_path=object_path)
-                db.session.add(object_perm_asoc)
+                object_perm_assoc = ObjectPerm(perm_id=perm.id, object_path=object_path)
+                db.session.add(object_perm_assoc)
                 db.session.commit()
 
         return {'perm_id': perm.id}
 
 
-# auth resource
-class Auth(Resource):
+class Token(Resource):
+
+    """
+    Handles token generation
+    """
+
     @auth.login_required
     def post(self):
         # get a token
@@ -325,8 +329,54 @@ class Auth(Resource):
         return {'token': token.decode('ascii'), 'duration': 600}
 
 
+class Auth(Resource):
+
+    """
+    Authenticates user with resources
+    """
+
+    @auth.login_required
+    def post(self):
+        """
+        Return has_access True or False depending on permissions
+        """
+        options = ['resource_path']
+
+        data = request.get_json()
+        for k in data.keys():
+            if k not in options:
+                return {'error': 'unknown option: {}'.format(k)}, 400
+
+        resource_path = data.get('resource_path')
+        user_id = g.user.id
+
+        # check if this API is even registered under a permission
+        assoc_object_perm_list = ObjectPerm.query.filter_by(object_path=resource_path).all()
+        if assoc_object_perm_list is None:
+            return {'has_access': False}, 400
+
+        # if it does, list the matching ids
+        perm_id_list = list()
+        for assoc_obect_perm in assoc_object_perm_list:
+            perm_id_list.append(assoc_obect_perm.perm_id)
+
+        # if the user has a group, check the permissions there first
+        if g.user.group_id is not None:
+            for perm_id in perm_id_list:
+                if GroupPerm.query.filter_by(group_id=g.user.group_id, perm_id=perm_id).first() is not None:
+                    return {'has_access': True}, 200
+
+        for perm_id in perm_id_list:
+            if UserPerm.query.filter_by(user_id=user_id, perm_id=perm_id).first is not None:
+                return {'has_access': True}, 200
+
+        # at this point it fails
+        return {'has_access': False}, 400
+
+
 # api resources
-api.add_resource(Auth, '/port/auth')
 api.add_resource(Users, '/port/users')
 api.add_resource(Groups, '/port/groups')
 api.add_resource(Permissions, '/port/permissions')
+api.add_resource(Token, '/port/token')
+api.add_resource(Auth, '/port/auth')
