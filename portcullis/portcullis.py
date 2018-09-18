@@ -66,17 +66,37 @@ class User(db.Model):
         return user
 
 
+class UserPerm(db.Model):
+    __tablename__ = 'users_perm'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, nullable=False)
+    perm_id = db.Column(db.Integer, nullable=False)
+
+
+class Group(db.Model):
+    __tablename__ = 'groups'
+    id = db.Column(db.Integer, primary_key=True)
+    group_name = db.Column(db.String(32), index=True, nullable=False)
+
+
+class GroupPerm(db.Model):
+    __tablename__ = 'groups_perm'
+    id = db.Column(db.Integer, primary_key=True)
+    group_id = db.Column(db.Integer, nullable=False)
+    perm_id = db.Column(db.Integer, nullable=False)
+
+
 class Permission(db.Model):
     __tablename__ = 'permissions'
     id = db.Column(db.Integer, primary_key=True)
     perm_name = db.Column(db.String(32), index=True, nullable=False)
 
 
-class UserPerm(db.Model):
-    __tablename__ = 'users_perm'
+class ObjectPerm(db.Model):
+    __tablename__ = "object_perm"
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, nullable=False)
     perm_id = db.Column(db.Integer, nullable=False)
+    object_path = db.Column(db.String(128), nullable=False)
 
 
 # create db for shitty testing
