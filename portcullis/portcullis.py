@@ -118,8 +118,12 @@ def verify_password(username_or_token, password):
         return True
 
 
-# user resources
 class Users(Resource):
+
+    """
+    Resources for working with users
+    """
+
     def get(self):
         users = User.query.all()
         user_names = list()
@@ -147,6 +151,7 @@ class Users(Resource):
         group = data.get('group')
         group_id = None
         permissions_list = data.get('permissions_list')
+        perm_id_list = list()
 
         if username is None or password is None:
             # required fields
@@ -166,13 +171,82 @@ class Users(Resource):
             for permission in permissions_list:
                 if Permission.query.filter_by(perm_name=permission).first() is None:
                     return {'error': 'permission {} does not exist'.format(permission)}
+                else:
+                    perm_id_list.append(perm_query.id)
 
         user = User(username=username, group_id=group_id)
         user.hash_password(password)
         db.session.add(user)
-        db.session.commit()
 
+        # create references for permissions that do exit
+        if permissions_list is not None:
+            for perm_id in perm_id_list:
+                user_perm = UserPerm(user_id=user.id, perm_id=perm_id)
+                db.session.add(user_perm)
+
+        db.session.commit()
         return {'user_id': user.id}
+
+
+class Groups(Resource):
+
+    """
+    Resources for working with groups
+    """
+
+    def get(self):
+        """
+        Returns a list of all group names
+        """
+        groups = Group.query.all()
+        group_names = list()
+        for group in groups:
+            group_names.append(group.group_name)
+
+        return {'groups' : group_names}
+
+    def post(self):
+        """
+        Registers a new group
+        """
+        options = ['group_name', 
+                   'permissions_list']
+
+        data = request.get_json()
+        for k in data.keys():
+            if k not in options:
+                return {'error': 'unknown option: {}'.format(k)}, 400
+
+        group_name = data.get('group_name')
+        permissions_list = data.get('permissions_list')
+        perm_id_list = list()
+
+        if group_name is None:
+            # required fields
+            return {'error': 'missing arguments'}, 400
+        if Group.query.filter_by(group_name=group_name).first() is not None:
+            # user with name already in DB
+            return {'error': 'existing user'}, 400
+        if permissions_list is not None:
+            # iterate through permissions, make sure they all exist
+            for permission in permissions_list:
+                perm_query = Permission.query.filter_by(perm_name=permission).first()
+                if perm_query is None:
+                    return {'error': 'permission {} does not exist'.format(permission)}
+                else:
+                    perm_id_list.append(perm_query.id)
+
+        group = Group(group_name=group_name)
+        db.session.add(group)
+        
+        # create references for permissions that do exit
+        if permissions_list is not None:
+            for perm_id in perm_id_list:
+                group_perm = GroupPerm(group_id=group.id, perm_id=perm_id)
+                db.session.add(group_perm)
+
+        db.session.commit()
+        return {'group_id': group.id}
 
 
 # auth resource
@@ -187,3 +261,4 @@ class Auth(Resource):
 # api resources
 api.add_resource(Auth, '/api/auth')
 api.add_resource(Users, '/api/users')
+api.add_resource(Groups, '/api/groups')
