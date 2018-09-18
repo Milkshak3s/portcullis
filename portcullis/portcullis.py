@@ -126,11 +126,15 @@ class Users(Resource):
 
     def get(self):
         users = User.query.all()
-        user_names = list()
-        for user in users:
-            user_names.append(user.username)
+        user_list = list()
+        user_dict = dict()
 
-        return {'users' : user_names}
+        for user in users:
+            user_dict['user_id'] = user.id
+            user_dct['username'] = user.username
+            user_list.append(user_dict)
+
+        return {'users' : user_list}
 
     def post(self):
         """
@@ -201,10 +205,14 @@ class Groups(Resource):
         """
         groups = Group.query.all()
         group_names = list()
-        for group in groups:
-            group_names.append(group.group_name)
+        group_dict = dict()
 
-        return {'groups' : group_names}
+        for group in groups:
+            group_dict['group_id'] = group.id
+            group_dict['group_name'] = group.group_name
+            group_list.append(group_dict)
+
+        return {'groups' : group_list}
 
     def post(self):
         """
@@ -264,9 +272,10 @@ class Permissions(Resource):
         perms = Permission.query.all()
         perm_list = list()
         perm_dict = dict()
+
         for perm in perms:
             perm_dict['perm_id'] = perm.id
-            perm_dict['name'] = perm.perm_name
+            perm_dict['perm_name'] = perm.perm_name
             perm_list.append(perm_dict)
 
         return {'perms' : perm_list}
