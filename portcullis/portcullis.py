@@ -1,5 +1,5 @@
 import os
-from flask import Flask, g, url_for
+from flask import Flask, request, g, url_for, json
 from flask_restful import reqparse, Resource, Api
 from flask_sqlalchemy import SQLAlchemy
 from flask_httpauth import HTTPBasicAuth
@@ -19,9 +19,6 @@ db = SQLAlchemy(app)
 
 # define api stuff
 api = Api(app)
-parser = reqparse.RequestParser()
-parser.add_argument('username')
-parser.add_argument('password')
 
 
 class User(db.Model):
@@ -132,23 +129,50 @@ class Users(Resource):
         return {'users' : user_names}
 
     def post(self):
-        # add a new user to the db
-        args = parser.parse_args()
-        username = args.get('username')
-        password = args.get('password')
+        """
+        Add a new user to the db
+        """
+        options = ['username', 
+                   'password', 
+                   'group', 
+                   'permissions_list']
+
+        data = request.get_json()
+        for k in data.keys():
+            if k not in options:
+                return {'error': 'unknown option: {}'.format(k)}, 400
+
+        username = data.get('username')
+        password = data.get('password')
+        group = data.get('group')
+        group_id = None
+        permissions_list = data.get('permissions_list')
 
         if username is None or password is None:
+            # required fields
             return {'error': 'missing arguments'}, 400
         if User.query.filter_by(username=username).first() is not None:
+            # user with name already in DB
             return {'error': 'existing user'}, 400
+        if group is not None:
+            group_query = Group.query.filter_by(group_name=group).first()
+            if group_query is None:
+                # group with name does not exist
+                return {'error': 'group does not exist'}, 400
+            else:
+                group_id = group_query.id
+        if permissions_list is not None:
+            # iterate through permissions, make sure they all exist
+            for permission in permissions_list:
+                if Permission.query.filter_by(perm_name=permission).first() is None:
+                    return {'error': 'permission {} does not exist'.format(permission)}
 
-        user = User(username=username)
+        user = User(username=username, group_id=group_id)
         user.hash_password(password)
         db.session.add(user)
         db.session.commit()
 
-        return {'username': user.username}, 201, \
-                {'Location': url_for('users', id=user.id, _external=True)}
+        return {'user_id': user.id}
 
 
 # auth resource
