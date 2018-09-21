@@ -382,7 +382,7 @@ class GroupsByID(Resource):
         group = Group.query.filter_by(id=group_id).first()
 
         if group is None:
-            return {'error': 'user not found'}, 400
+            return {'error': 'group not found'}, 400
 
         permissions_id_list = list()
         permissions_list = list()
@@ -396,18 +396,16 @@ class GroupsByID(Resource):
                 'group_name': group.group_name, 
                 'permissions_list': permissions_list}, 200
 
-    def patch(self, user_id):
+    def patch(self, group_id):
         """
-        Update the info for an existing user
+        Update the info for an existing group
         """
-        user = User.query.filter_by(id=user_id).first()
+        group = Group.query.filter_by(id=group_id).first()
 
-        if user is None:
-            return {'error': 'user not found'}, 400
+        if group is None:
+            return {'error': 'group not found'}, 400
 
-        options = ['username', 
-                   'password', 
-                   'group', 
+        options = ['group_name', 
                    'permissions_list']
 
         data = request.get_json()
@@ -415,28 +413,15 @@ class GroupsByID(Resource):
             if k not in options:
                 return {'error': 'unknown option: {}'.format(k)}, 400
 
-        username = data.get('username')
-        password = data.get('password')
-        group_name = data.get('group')
-        group_id = 0
+        group_name = data.get('group_name')
         permissions_list = data.get('permissions_list')
 
         # check username
-        if username is not None and username != user.username:
-            if User.query.filter_by(username=username).first() is not None:
-                    return {'error': 'username already exists'}
+        if group_name is not None and group_name != group.group_name:
+            if Group.query.filter_by(group_name=group_name).first() is not None:
+                    return {'error': 'group_name already exists'}
         else:
-            username = user.username
-
-        # check group
-        if group_name is not None:
-            group = Group.query.filter_by(group_name=group_name).first()
-            if group is None:
-                return {'error': 'group does not exist'}
-            else:
-                group_id = group.id
-        else:
-            group_id = user.group_id
+            group_name = group.group_name
 
         # check permissions list
         perm_id_list = list()
@@ -451,27 +436,20 @@ class GroupsByID(Resource):
         # update perms
         if permissions_list is not None:
             # remove old perms
-            for perm in UserPerm.query.filter_by(user_id=user_id).all():
+            for perm in GroupPerm.query.filter_by(group_id=group_id).all():
                 db.session.delete(perm)
                 db.session.commit()
 
             # add new perms
             for perm_id in perm_id_list:
-                user_perm = UserPerm(user_id=user.id, perm_id=perm_id)
-                db.session.add(user_perm)
+                group_perm = GroupPerm(group_id=group.id, perm_id=perm_id)
+                db.session.add(group_perm)
                 db.session.commit()
 
-        # update password
-        if password is not None:
-            user.hash_password(password)
+        # update group_name
+        group.group_name = group_name
 
-        # update group_id
-        user.group_id = group_id
-
-        # update username
-        user.username = username
-
-        return self.get(user_id)
+        return self.get(group_id)
 
 
 class Permissions(Resource):
