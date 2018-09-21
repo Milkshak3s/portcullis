@@ -1,5 +1,6 @@
 import os
 from flask import Flask, request, g, url_for, json
+from flask_cors import CORS
 from flask_restful import reqparse, Resource, Api
 from flask_sqlalchemy import SQLAlchemy
 from flask_httpauth import HTTPBasicAuth
@@ -19,6 +20,9 @@ db = SQLAlchemy(app)
 
 # define api stuff
 api = Api(app)
+
+# enable cross-request
+CORS(app)
 
 
 class User(db.Model):
@@ -191,6 +195,111 @@ class Users(Resource):
                 db.session.commit()
 
         return {'user_id': user.id}
+
+
+class UsersByID(Resource):
+
+    """
+    Resources for working with individual users
+    """
+
+    def get(self, user_id):
+        """
+        Get all fields for a specific user
+        """
+        user = User.query.filter_by(id=user_id).first()
+
+        if user is None:
+            return {'error': 'user not found'}, 400
+
+        permissions_id_list = list()
+        permissions_list = list()
+        for assoc_perm in UserPerm.query.filter_by(user_id=user.id):
+            permissions_id_list.append(assoc_perm.perm_id)
+        for perm_id in permissions_id_list:
+            perm = Permission.query.filter_by(id=perm_id)
+            permissions_list.append(perm.perm_name)
+
+        return {'user_id': user.id, 
+                'username': user.username, 
+                'group_id': user.group_id,
+                'permissions_list': permissions_list}, 200
+
+    def patch(self, user_id):
+        """
+        Update the info for an existing user
+        """
+        user = User.query.filter_by(id=user_id).first()
+
+        if user is None:
+            return {'error': 'user not found'}, 400
+
+        options = ['username', 
+                   'password', 
+                   'group', 
+                   'permissions_list']
+
+        data = request.get_json()
+        for k in data.keys():
+            if k not in options:
+                return {'error': 'unknown option: {}'.format(k)}, 400
+
+        username = data.get('username')
+        password = data.get('password')
+        group_name = data.get('group')
+        group_id = 0
+        permissions_list = data.get('permissions_list')
+
+        # check username
+        if username is not None and username is not user.username:
+            if User.query.filter_by(username=username).first() is not None:
+                    return {'error': 'username already exists'}
+        else:
+            username = user.username
+
+        # check group
+        if group_name is not None:
+            group = Group.query.filter_by(group_name=group_name).first()
+            if group is None:
+                return {'error': 'group does not exist'}
+            else:
+                group_id = group.id
+        else:
+            group_id = user.group_id
+
+        # check permissions list
+        perm_id_list = list()
+        if permissions_list is not None:
+            for permission in permissions_list:
+                if Permission.query.filter_by(perm_name=permission).first() is None:
+                    return {'error': 'permission {} does not exist'.format(permission)}
+                else:
+                    perm_id_list.append(perm_query.id)
+
+        # update perms
+        if permissions_list is not None:
+            # remove old perms
+            for perm in UserPerm.query.filter_by(user_id=user_id).all():
+                db.session.delete(perm)
+                db.session.commit()
+
+            # add new perms
+            for perm_id in perm_id_list:
+                user_perm = UserPerm(user_id=user.id, perm_id=perm_id)
+                db.session.add(user_perm)
+                db.session.commit()
+
+        # update password
+        if password is not None:
+            user.hash_password(password)
+
+        # update group_id
+        user.group_id = group_id
+
+        # update username
+        user.username = username
+
+        return self.get(user_id)
 
 
 class Groups(Resource):
@@ -376,6 +485,7 @@ class Auth(Resource):
 
 # api resources
 api.add_resource(Users, '/port/users')
+api.add_resource(UsersByID, '/port/users/<int:user_id>')
 api.add_resource(Groups, '/port/groups')
 api.add_resource(Permissions, '/port/permissions')
 api.add_resource(Token, '/port/token')
