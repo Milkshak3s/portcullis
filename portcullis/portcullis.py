@@ -214,10 +214,10 @@ class UsersByID(Resource):
 
         permissions_id_list = list()
         permissions_list = list()
-        for assoc_perm in UserPerm.query.filter_by(user_id=user.id):
+        for assoc_perm in UserPerm.query.filter_by(user_id=user.id).all():
             permissions_id_list.append(assoc_perm.perm_id)
         for perm_id in permissions_id_list:
-            perm = Permission.query.filter_by(id=perm_id)
+            perm = Permission.query.filter_by(id=perm_id).first()
             permissions_list.append(perm.perm_name)
 
         return {'user_id': user.id, 
@@ -251,7 +251,7 @@ class UsersByID(Resource):
         permissions_list = data.get('permissions_list')
 
         # check username
-        if username is not None and username is not user.username:
+        if username is not None and username != user.username:
             if User.query.filter_by(username=username).first() is not None:
                     return {'error': 'username already exists'}
         else:
@@ -271,7 +271,8 @@ class UsersByID(Resource):
         perm_id_list = list()
         if permissions_list is not None:
             for permission in permissions_list:
-                if Permission.query.filter_by(perm_name=permission).first() is None:
+                perm_query = Permission.query.filter_by(perm_name=permission).first()
+                if perm_query is None:
                     return {'error': 'permission {} does not exist'.format(permission)}
                 else:
                     perm_id_list.append(perm_query.id)
