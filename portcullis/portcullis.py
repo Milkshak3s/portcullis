@@ -299,6 +299,7 @@ class UsersByID(Resource):
 
         # update username
         user.username = username
+        db.session.commit()
 
         return self.get(user_id)
 
@@ -448,6 +449,7 @@ class GroupsByID(Resource):
 
         # update group_name
         group.group_name = group_name
+        db.session.commit()
 
         return self.get(group_id)
 
@@ -532,60 +534,51 @@ class PermissionsByID(Resource):
                 'perm_name': perm.perm_name, 
                 'object_path_list': object_path_list}, 200
 
-    def patch(self, group_id):
+    def patch(self, perm_id):
         """
         Update the info for an existing permission
         """
-        group = Group.query.filter_by(id=group_id).first()
+        perm = Permission.query.filter_by(id=perm_id).first()
 
-        if group is None:
-            return {'error': 'group not found'}, 400
+        if perm is None:
+            return {'error': 'permission not found'}, 400
 
-        options = ['group_name', 
-                   'permissions_list']
+        options = ['perm_name', 
+                   'object_path_list']
 
         data = request.get_json()
         for k in data.keys():
             if k not in options:
                 return {'error': 'unknown option: {}'.format(k)}, 400
 
-        group_name = data.get('group_name')
-        permissions_list = data.get('permissions_list')
+        perm_name = data.get('perm_name')
+        object_path_list = data.get('object_path_list')
 
         # check username
-        if group_name is not None and group_name != group.group_name:
-            if Group.query.filter_by(group_name=group_name).first() is not None:
-                    return {'error': 'group_name already exists'}
+        if perm_name is not None and perm_name != perm.perm_name:
+            if Permission.query.filter_by(perm_name=perm_name).first() is not None:
+                    return {'error': 'perm_name already exists'}
         else:
-            group_name = group.group_name
+            perm_name = perm.perm_name
 
-        # check permissions list
-        perm_id_list = list()
-        if permissions_list is not None:
-            for permission in permissions_list:
-                perm_query = Permission.query.filter_by(perm_name=permission).first()
-                if perm_query is None:
-                    return {'error': 'permission {} does not exist'.format(permission)}
-                else:
-                    perm_id_list.append(perm_query.id)
-
-        # update perms
-        if permissions_list is not None:
-            # remove old perms
-            for perm in GroupPerm.query.filter_by(group_id=group_id).all():
-                db.session.delete(perm)
+        # update objects
+        if object_path_list is not None:
+            #remove old objects
+            for object_perm in ObjectPerm.query.filter_by(perm_id=perm.id).all():
+                db.session.delete(object_perm)
                 db.session.commit()
 
-            # add new perms
-            for perm_id in perm_id_list:
-                group_perm = GroupPerm(group_id=group.id, perm_id=perm_id)
-                db.session.add(group_perm)
+            # add new objects
+            for object_path in object_path_list:
+                object_perm = ObjectPerm(perm_id=perm.id, object_path=object_path)
+                db.session.add(object_perm)
                 db.session.commit()
 
-        # update group_name
-        group.group_name = group_name
+        # update perm_name
+        perm.perm_name = perm_name
+        db.session.commit()
 
-        return self.get(group_id)
+        return self.get(perm_id)
 
 
 class AuthToken(Resource):
