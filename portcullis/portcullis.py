@@ -631,9 +631,52 @@ class AuthResource(Resource):
                 if GroupPerm.query.filter_by(group_id=g.user.group_id, perm_id=perm_id).first() is not None:
                     return {'has_access': True}, 200
 
+        # check user perms next
         for perm_id in perm_id_list:
             if UserPerm.query.filter_by(user_id=user_id, perm_id=perm_id).first is not None:
                 return {'has_access': True}, 200
+
+        # at this point it fails
+        return {'has_access': False}, 400
+
+
+class AuthPermission(Resource):
+
+    """
+    Authenticates user with permissions by name
+    """
+
+    @auth.login_required
+    def post(self):
+        """
+        Return has_access True or False depending on permissions
+        """
+        options = ['perm_name']
+
+        data = request.get_json()
+        for k in data.keys():
+            if k not in options:
+                return {'error': 'unknown option: {}'.format(k)}, 400
+
+        perm_name = data.get('perm_name')
+        user_id = g.user.id
+
+        # check if the permission even exists
+        perm_query = Permission.query.filter_by(perm_name=perm_name).first()
+        perm_id = 0
+        if perm_query is None:
+            return {'has_access': False}, 400
+        else:
+            perm_id = perm_query.id
+
+        # if the user has a group, check the permissions there first
+        if g.user.group_id is not None:
+            if GroupPerm.query.filter_by(group_id=g.user.group_id, perm_id=perm_id).first() is not None:
+                return {'has_access': True}, 200
+
+        # check user perms next
+        if UserPerm.query.filter_by(user_id=user_id, perm_id=perm_id).first() is not None:
+            return {'has_access': True}, 200
 
         # at this point it fails
         return {'has_access': False}, 400
@@ -648,3 +691,4 @@ api.add_resource(Permissions, '/port/permissions')
 api.add_resource(PermissionsByID, '/port/permissions/<int:perm_id>')
 api.add_resource(AuthToken, '/port/auth/token')
 api.add_resource(AuthResource, '/port/auth/resource')
+api.add_resource(AuthPermission, '/port/auth/permission')
