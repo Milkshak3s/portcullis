@@ -509,7 +509,86 @@ class Permissions(Resource):
         return {'perm_id': perm.id}
 
 
-class Token(Resource):
+class PermissionsByID(Resource):
+
+    """
+    Resources for working with individual permissions
+    """
+
+    def get(self, perm_id):
+        """
+        Get all fields for a specific permission
+        """
+        perm = Permission.query.filter_by(id=perm_id).first()
+
+        if perm is None:
+            return {'error': 'permission not found'}, 400
+
+        object_path_list = list()
+        for assoc_object in ObjectPerm.query.filter_by(perm_id=perm.id).all():
+            object_path_list.append(assoc_object.object_path)
+
+        return {'perm_id': perm.id,
+                'perm_name': perm.perm_name, 
+                'object_path_list': object_path_list}, 200
+
+    def patch(self, group_id):
+        """
+        Update the info for an existing permission
+        """
+        group = Group.query.filter_by(id=group_id).first()
+
+        if group is None:
+            return {'error': 'group not found'}, 400
+
+        options = ['group_name', 
+                   'permissions_list']
+
+        data = request.get_json()
+        for k in data.keys():
+            if k not in options:
+                return {'error': 'unknown option: {}'.format(k)}, 400
+
+        group_name = data.get('group_name')
+        permissions_list = data.get('permissions_list')
+
+        # check username
+        if group_name is not None and group_name != group.group_name:
+            if Group.query.filter_by(group_name=group_name).first() is not None:
+                    return {'error': 'group_name already exists'}
+        else:
+            group_name = group.group_name
+
+        # check permissions list
+        perm_id_list = list()
+        if permissions_list is not None:
+            for permission in permissions_list:
+                perm_query = Permission.query.filter_by(perm_name=permission).first()
+                if perm_query is None:
+                    return {'error': 'permission {} does not exist'.format(permission)}
+                else:
+                    perm_id_list.append(perm_query.id)
+
+        # update perms
+        if permissions_list is not None:
+            # remove old perms
+            for perm in GroupPerm.query.filter_by(group_id=group_id).all():
+                db.session.delete(perm)
+                db.session.commit()
+
+            # add new perms
+            for perm_id in perm_id_list:
+                group_perm = GroupPerm(group_id=group.id, perm_id=perm_id)
+                db.session.add(group_perm)
+                db.session.commit()
+
+        # update group_name
+        group.group_name = group_name
+
+        return self.get(group_id)
+
+
+class AuthToken(Resource):
 
     """
     Handles token generation
@@ -522,7 +601,7 @@ class Token(Resource):
         return {'token': token.decode('ascii'), 'duration': 600}
 
 
-class Auth(Resource):
+class AuthResource(Resource):
 
     """
     Authenticates user with resources
@@ -573,5 +652,6 @@ api.add_resource(UsersByID, '/port/users/<int:user_id>')
 api.add_resource(Groups, '/port/groups')
 api.add_resource(GroupsByID, '/port/groups/<int:group_id>')
 api.add_resource(Permissions, '/port/permissions')
-api.add_resource(Token, '/port/token')
-api.add_resource(Auth, '/port/auth')
+api.add_resource(PermissionsByID, '/port/permissions/<int:perm_id>')
+api.add_resource(AuthToken, '/port/auth/token')
+api.add_resource(AuthResource, '/port/auth/resource')
