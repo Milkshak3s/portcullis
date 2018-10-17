@@ -9,4 +9,4 @@ Build the docker image with:
 ```docker build -t "portcullis:latest" .```
 
 Run the docker image with:  
-```docker run -p 80:80 portcullis```
+```docker run -p 443:443 portcullis```
