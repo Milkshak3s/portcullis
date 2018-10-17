@@ -10,3 +10,30 @@ Build the docker image with:
 
 Run the docker image with:  
 ```docker run -p 80:80 portcullis```
+
+
+## Decorator Usage
+Import and setup the class containing the decorator:  
+```
+from pcauth import PortcullisAuth
+
+pc = PortcullisAuth("localhost", 80)
+```  
+
+To automatically auth the current path:  
+```
+@pc.recauth()
+def someroute():
+```  
+
+To auth a different resource path:  
+```
+@pc.recauth("/path/to/resource")
+def someroute():
+```  
+
+To auth a speicific named permission:  
+```
+@pc.permauth("permission_name"):
+def someroute():
+```  
