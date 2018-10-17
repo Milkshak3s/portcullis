@@ -7,6 +7,10 @@ set -e
 gcloud --quiet config set container/cluster $KUBE_CLUSTER
 gcloud --quiet container clusters get-credentials $KUBE_CLUSTER
 
+# Copy SSL certs from ENV
+echo ${SSL_CERT} > cert.pem
+echo ${SSL_KEY} > key.pem
+
 # Do the docker
 docker build -t "portcullis:$CIRCLE_SHA1" .
 docker tag "portcullis:$CIRCLE_SHA1" "us.gcr.io/${GOOGLE_PROJECT_ID}/portcullis:$CIRCLE_SHA1"

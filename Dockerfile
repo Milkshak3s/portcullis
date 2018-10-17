@@ -9,4 +9,4 @@ WORKDIR /app/portcullis
 
 EXPOSE 80
 ENTRYPOINT ["gunicorn"]
-CMD ["-w 4", "-b", "0.0.0.0:80", "portcullis:app"]
+CMD ["--certfile", "../cert.pem", "--keyfile", "../key.pem", "-w 4", "-b", "0.0.0.0:443", "portcullis:app"]
