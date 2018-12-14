@@ -11,15 +11,19 @@ class PortcullisAuth():
     a Portcullis server
     """
 
-    def __init__(self, server, port):
+    def __init__(self, server, port, ssl=False):
         """
         Init for the PortcullisAuth object, for wrappers!
         """
         self._portcullis_server = server
         self._portcullis_port = port
 
-        self._request_server = "http://" + self._portcullis_server + \
-                              ":" + str(self._portcullis_port)
+        if ssl:
+            self._request_server = "https://" + self._portcullis_server + \
+                                   ":" + str(self._portcullis_port)
+        else:
+            self._request_server = "http://" + self._portcullis_server + \
+                                   ":" + str(self._portcullis_port)
 
         self._auth_path_rec = "/port/auth/resource"
         self._auth_path_perm = "/port/auth/permission"

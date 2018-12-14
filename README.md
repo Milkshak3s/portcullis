@@ -18,7 +18,7 @@ Import and setup the class containing the decorator:
 ```
 from pcauth import PortcullisAuth
 
-pc = PortcullisAuth("localhost", 80)
+pc = PortcullisAuth("localhost", 80, ssl=False)
 ```  
 
 To automatically auth the current path:  
