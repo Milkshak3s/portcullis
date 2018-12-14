@@ -7,6 +7,6 @@ RUN pip install -r requirements.txt
 COPY . /app
 WORKDIR /app/portcullis
 
-EXPOSE 443
+EXPOSE 80
 ENTRYPOINT ["gunicorn"]
-CMD ["--certfile", "../cert.pem", "--keyfile", "../key.pem", "-w 4", "-b", "0.0.0.0:443", "portcullis:app"]
+CMD ["-w 4", "-b", "0.0.0.0:80", "portcullis:app"]

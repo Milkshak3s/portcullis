@@ -10,7 +10,7 @@ Build the docker image with:
 
 Run the docker image with:  
 v0/auth-decorators
-```docker run -p 443:443 portcullis```
+```docker run -p 80:80 portcullis```
 
 
 ## Decorator Usage
