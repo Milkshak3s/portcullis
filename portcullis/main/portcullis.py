@@ -1,3 +1,8 @@
+"""
+portcullis.py
+
+Portcullis is a simple authentication server, for use in microservice projects.
+"""
 import os
 from flask import Flask, request, g, url_for, json
 from flask_cors import CORS
